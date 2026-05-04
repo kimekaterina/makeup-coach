@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Makeup Coach AI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --rose:#D4537E;--rose2:rgba(212,83,126,0.12);--gold:#EF9F27;--grn:#1D9E75;
+  --blue:#7dd3fc;--lime:#86efac;--amb:#fbbf24;--pur:#c084fc;
+  --bg:#090909;--bg2:#111;--bg3:#161616;--bg4:#1e1e1e;
+  --t1:#fff;--t2:#aaa;--t3:#555;--br:#222;
+  --ff:'DM Sans',sans-serif;--fd:'Cormorant Garamond',serif;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);}
+body{font-family:var(--ff);color:var(--t1);display:flex;flex-direction:column;}
+
+.top{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--bg2);border-bottom:1px solid var(--br);flex-shrink:0;gap:8px;flex-wrap:wrap;}
+.logo{font-family:var(--fd);font-size:20px;font-weight:300;}
+.logo em{color:var(--rose);font-style:italic;}
+.evs{display:flex;gap:4px;flex-wrap:wrap;}
+.eb{padding:3px 11px;border:1px solid var(--br);border-radius:18px;background:transparent;color:var(--t3);font-family:var(--ff);font-size:11px;cursor:pointer;transition:all .18s;}
+.eb.on{background:var(--rose);color:#fff;border-color:var(--rose);}
+.eb:hover:not(.on){border-color:var(--rose);color:var(--rose);}
+
+.layout{display:flex;flex:1;overflow:hidden;min-height:0;}
+
+/* CAM */
+.cam{flex:1;position:relative;background:#000;overflow:hidden;}
+#vid{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:none;}
+#cvs{position:absolute;inset:0;width:100%;height:100%;transform:scaleX(-1);pointer-events:none;display:none;}
+
+/* SPLASH */
+.splash{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;background:var(--bg);z-index:30;text-align:center;padding:24px;}
+.sp-ic{font-size:54px;opacity:.2;}
+.sp-h{font-family:var(--fd);font-size:27px;font-weight:300;}
+.sp-h em{color:var(--rose);font-style:italic;}
+.sp-p{font-size:12.5px;color:var(--t3);max-width:300px;line-height:1.75;}
+.sp-btn{padding:12px 32px;background:var(--rose);color:#fff;border:none;border-radius:25px;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--ff);transition:all .2s;}
+.sp-btn:hover{background:#bf3d6a;}
+.sp-note{font-size:10.5px;color:var(--t3);}
+
+/* FLOATING LABELS */
+.fl{position:absolute;pointer-events:none;z-index:10;transition:opacity .2s;}
+.fl-box{background:rgba(4,4,4,0.9);border:1px solid transparent;border-radius:6px;padding:5px 9px;max-width:145px;}
+.fl.ey .fl-box{border-color:var(--blue);} .fl.ey .ft{color:var(--blue);}
+.fl.br .fl-box{border-color:var(--lime);} .fl.br .ft{color:var(--lime);}
+.fl.no .fl-box{border-color:var(--pur);}  .fl.no .ft{color:var(--pur);}
+.fl.li .fl-box{border-color:var(--amb);}  .fl.li .ft{color:var(--amb);}
+.fl.ch .fl-box{border-color:#f9a8d4;}      .fl.ch .ft{color:#f9a8d4;}
+.ft{font-size:8.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;margin-bottom:2px;}
+.fv{font-size:10.5px;color:rgba(255,255,255,.8);line-height:1.45;}
+
+/* VOICE BAR */
+.vbar{position:absolute;bottom:0;left:0;right:0;background:rgba(5,5,5,.93);border-top:1px solid var(--br);padding:8px 13px;display:flex;align-items:center;gap:10px;z-index:20;}
+.waves{display:flex;align-items:center;gap:2px;height:22px;flex-shrink:0;}
+.wb{width:3px;background:var(--rose);border-radius:2px;height:4px;}
+.wb.on{animation:wv .55s ease-in-out infinite;}
+.wb:nth-child(2){animation-delay:.08s;}.wb:nth-child(3){animation-delay:.16s;}.wb:nth-child(4){animation-delay:.24s;}.wb:nth-child(5){animation-delay:.32s;}
+@keyframes wv{0%,100%{height:4px}50%{height:18px}}
+.vtxt{font-size:11.5px;color:var(--t2);flex:1;font-style:italic;line-height:1.4;}
+.vstop{padding:4px 9px;background:transparent;border:1px solid var(--br);border-radius:5px;color:var(--t3);font-size:11px;cursor:pointer;font-family:var(--ff);}
+.vstop:hover{border-color:var(--rose);color:var(--rose);}
+
+/* VOICE FAB */
+.vfab{position:absolute;top:11px;right:11px;z-index:22;width:42px;height:42px;border-radius:50%;background:rgba(8,8,8,.88);border:1.5px solid var(--rose);color:var(--rose);font-size:18px;cursor:pointer;display:none;align-items:center;justify-content:center;transition:all .2s;}
+.vfab:hover,.vfab.on{background:var(--rose);color:#fff;}
+.vfab.on{animation:glow 1s infinite;}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(212,83,126,.4)}50%{box-shadow:0 0 0 8px rgba(212,83,126,0)}}
+
+/* ZONE BADGE */
+.zbadge{position:absolute;top:11px;left:11px;z-index:22;background:rgba(5,5,5,.88);border:1px solid var(--rose);border-radius:6px;padding:4px 11px;font-size:11px;color:var(--rose);pointer-events:none;display:none;}
+
+/* ════════════════════════════
+   FINISH / SATISFACTION SCREEN
+════════════════════════════ */
+.finish-overlay{
+  position:absolute;inset:0;z-index:50;
+  background:linear-gradient(160deg,#0d0608 0%,#100a0d 50%,#0a0d10 100%);
+  display:none;flex-direction:column;align-items:center;justify-content:flex-start;
+  overflow-y:auto;padding:28px 20px 40px;
+}
+.finish-overlay.show{display:flex;}
+
+/* confetti particles */
+.confetti-wrap{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1;}
+.cp{position:absolute;width:6px;height:6px;border-radius:1px;animation:fall linear forwards;}
+@keyframes fall{0%{transform:translateY(-20px) rotate(0deg);opacity:1;}100%{transform:translateY(110vh) rotate(720deg);opacity:0;}}
+
+.finish-content{position:relative;z-index:2;width:100%;max-width:380px;display:flex;flex-direction:column;align-items:center;gap:16px;}
+
+.finish-badge{
+  width:72px;height:72px;border-radius:50%;
+  background:linear-gradient(135deg,#D4537E,#EF9F27);
+  display:flex;align-items:center;justify-content:center;
+  font-size:32px;box-shadow:0 0 30px rgba(212,83,126,0.4);
+  animation:popIn .5s cubic-bezier(.175,.885,.32,1.275);
+}
+@keyframes popIn{0%{transform:scale(0)}100%{transform:scale(1)}}
+
+.finish-title{font-family:var(--fd);font-size:26px;font-weight:400;text-align:center;line-height:1.2;}
+.finish-title em{color:var(--rose);font-style:italic;}
+.finish-ev-tag{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--rose);background:rgba(212,83,126,0.1);border:1px solid rgba(212,83,126,0.25);border-radius:20px;padding:3px 12px;}
+
+/* SUMMARY STATS */
+.finish-stats{display:flex;gap:10px;width:100%;}
+.fstat{flex:1;background:var(--bg3);border:1px solid var(--br);border-radius:10px;padding:10px 12px;text-align:center;}
+.fstat-n{font-family:var(--fd);font-size:22px;color:var(--gold);}
+.fstat-l{font-size:9.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.12em;margin-top:2px;}
+
+/* STAR RATING */
+.rating-block{width:100%;background:var(--bg3);border:1px solid var(--br);border-radius:12px;padding:14px 16px;}
+.rating-title{font-size:11px;color:var(--t2);margin-bottom:10px;text-align:center;}
+.stars{display:flex;gap:6px;justify-content:center;margin-bottom:12px;}
+.star{font-size:30px;cursor:pointer;transition:transform .15s;opacity:.3;user-select:none;}
+.star.lit{opacity:1;}
+.star:hover{transform:scale(1.2);}
+.rating-label{text-align:center;font-size:13px;color:var(--rose);font-family:var(--fd);font-style:italic;min-height:20px;transition:all .2s;}
+
+/* FACE SCORES */
+.score-block{width:100%;background:var(--bg3);border:1px solid var(--br);border-radius:12px;padding:14px 16px;}
+.score-title{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--rose);margin-bottom:12px;}
+.score-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.score-label{font-size:11.5px;color:var(--t2);width:80px;flex-shrink:0;}
+.score-bar-wrap{flex:1;height:6px;background:var(--br);border-radius:3px;overflow:hidden;}
+.score-bar{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--rose),var(--gold));transition:width 1s cubic-bezier(.4,0,.2,1);}
+.score-val{font-size:11px;color:var(--t2);width:32px;text-align:right;}
+
+/* MOOD TAGS */
+.mood-block{width:100%;}
+.mood-title{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--rose);margin-bottom:8px;}
+.mood-tags{display:flex;flex-wrap:wrap;gap:6px;}
+.mtag{padding:5px 12px;border:1px solid var(--br);border-radius:20px;font-size:11.5px;color:var(--t3);cursor:pointer;transition:all .15s;}
+.mtag.on{background:rgba(212,83,126,.2);border-color:var(--rose);color:var(--rose);}
+
+/* NOTES */
+.notes-block{width:100%;}
+.notes-title{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--rose);margin-bottom:8px;}
+.notes-ta{width:100%;background:var(--bg3);border:1px solid var(--br);border-radius:10px;padding:10px 12px;font-family:var(--ff);font-size:12.5px;color:var(--t1);resize:none;height:72px;outline:none;transition:border .2s;}
+.notes-ta:focus{border-color:var(--rose);}
+.notes-ta::placeholder{color:var(--t3);}
+
+/* TIPS EARNED */
+.tips-block{width:100%;background:linear-gradient(135deg,rgba(212,83,126,0.08),rgba(239,159,39,0.08));border:1px solid rgba(212,83,126,0.2);border-radius:12px;padding:14px 16px;}
+.tips-title{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.tip-item{display:flex;gap:9px;align-items:flex-start;margin-bottom:8px;}
+.tip-icon{font-size:14px;flex-shrink:0;margin-top:1px;}
+.tip-text{font-size:11.5px;color:#ccc;line-height:1.55;}
+
+/* HISTORY */
+.hist-block{width:100%;}
+.hist-title{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--rose);margin-bottom:8px;}
+.hist-list{display:flex;flex-direction:column;gap:5px;max-height:120px;overflow-y:auto;}
+.hist-item{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--br);border-radius:8px;padding:7px 10px;}
+.hist-ev{font-size:11px;color:var(--t2);flex:1;}
+.hist-stars{font-size:11px;letter-spacing:1px;}
+.hist-date{font-size:10px;color:var(--t3);}
+
+/* FINISH ACTIONS */
+.finish-actions{display:flex;gap:8px;width:100%;}
+.fa-btn{flex:1;padding:11px;border:1px solid var(--br);border-radius:10px;background:transparent;color:var(--t2);font-family:var(--ff);font-size:12px;cursor:pointer;transition:all .18s;text-align:center;}
+.fa-btn:hover{border-color:var(--rose);color:var(--rose);}
+.fa-btn.pri{background:var(--rose);color:#fff;border-color:var(--rose);}
+.fa-btn.pri:hover{background:#bf3d6a;}
+.fa-btn.gold{background:rgba(239,159,39,0.15);color:var(--gold);border-color:rgba(239,159,39,0.3);}
+.fa-btn.gold:hover{background:rgba(239,159,39,0.25);}
+
+/* ── RIGHT PANEL ── */
+.rpanel{width:282px;flex-shrink:0;background:var(--bg2);border-left:1px solid var(--br);display:flex;flex-direction:column;overflow:hidden;}
+.ss{padding:10px 13px;border-bottom:1px solid var(--br);}
+.sl{font-size:8.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--rose);margin-bottom:6px;font-weight:500;}
+.trow{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;}
+.td{aspect-ratio:1;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .18s;}
+.td.on{border-color:#fff;transform:scale(1.13);}
+.flist{display:flex;flex-direction:column;gap:4px;}
+.frow{display:flex;justify-content:space-between;align-items:center;}
+.fk{font-size:10.5px;color:var(--t3);}
+.fv2{font-size:11px;color:#ddd;font-weight:500;}
+.shdr{padding:10px 13px 8px;border-bottom:1px solid var(--br);background:var(--bg3);}
+.sev{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--rose);margin-bottom:3px;}
+.sprog{display:flex;gap:3px;margin-bottom:6px;}
+.pd{height:3px;flex:1;border-radius:2px;background:var(--br);transition:background .3s;}
+.pd.dn{background:var(--rose);}.pd.cu{background:var(--gold);}
+.sname{font-family:var(--fd);font-size:18px;font-weight:400;line-height:1.2;}
+.sname em{color:var(--rose);font-style:italic;}
+.ssub{font-size:10px;color:var(--t3);margin-top:2px;}
+.sbody{flex:1;overflow-y:auto;padding:10px 12px;}
+.sbody::-webkit-scrollbar{width:2px;}
+.sbody::-webkit-scrollbar-thumb{background:#2a2a2a;}
+.sc{background:var(--bg3);border:1px solid var(--br);border-radius:9px;padding:10px 12px;margin-bottom:8px;}
+.sc-l{font-size:8px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;margin-bottom:4px;}
+.sc-t{font-size:11.5px;color:#c5c5c5;line-height:1.62;}
+.sc.ma .sc-l{color:var(--rose);}.sc.wa .sc-l{color:var(--amb);}.sc.pr .sc-l{color:var(--lime);}.sc.mi .sc-l{color:var(--blue);}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;}
+.chip{display:flex;align-items:center;gap:4px;background:var(--bg4);border:1px solid var(--br);border-radius:5px;padding:3px 7px;font-size:10.5px;color:var(--t2);}
+.cdot{width:11px;height:11px;border-radius:3px;flex-shrink:0;}
+.snav{padding:9px 12px;border-top:1px solid var(--br);display:flex;gap:6px;align-items:center;background:var(--bg3);}
+.nb{flex:1;padding:8px;border:1px solid var(--br);border-radius:8px;background:transparent;color:var(--t2);font-family:var(--ff);font-size:12px;cursor:pointer;transition:all .18s;}
+.nb:hover:not(:disabled){border-color:var(--rose);color:var(--rose);}
+.nb:disabled{opacity:.3;cursor:not-allowed;}
+.nb.p{background:var(--rose);color:#fff;border-color:var(--rose);}
+.nb.p:hover{background:#bf3d6a;}
+.sct{font-size:10px;color:var(--t3);white-space:nowrap;}
+
+.stat{display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:#050505;border-top:1px solid #111;flex-shrink:0;flex-wrap:wrap;gap:5px;}
+.sdot{width:7px;height:7px;border-radius:50%;background:#2a2a2a;display:inline-block;margin-right:6px;}
+.sdot.on{background:var(--grn);animation:pu 1.5s infinite;}
+@keyframes pu{0%,100%{opacity:1}50%{opacity:.3}}
+.stxt{font-size:10.5px;color:var(--t3);}
+.sbs{display:flex;gap:5px;}
+.sb{padding:5px 11px;background:var(--bg3);border:1px solid var(--br);border-radius:6px;color:var(--t2);font-size:11px;cursor:pointer;font-family:var(--ff);transition:all .18s;}
+.sb:hover{border-color:var(--rose);color:var(--rose);}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="logo">Makeup Coach <em>AI</em></div>
+  <div class="evs" id="evs">
+    <button class="eb on" onclick="setEv(this,'Daily')">Daily</button>
+    <button class="eb" onclick="setEv(this,'Date Night')">Date Night</button>
+    <button class="eb" onclick="setEv(this,'University')">University</button>
+    <button class="eb" onclick="setEv(this,'Wedding')">Wedding</button>
+    <button class="eb" onclick="setEv(this,'Work')">Work</button>
+    <button class="eb" onclick="setEv(this,'Party')">Party</button>
+    <button class="eb" onclick="setEv(this,'Photoshoot')">Photoshoot</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="cam" id="camcol">
+
+    <!-- SPLASH -->
+    <div class="splash" id="splash">
+      <div class="sp-ic">💄</div>
+      <div class="sp-h">AR Makeup <em>Coach</em></div>
+      <div class="sp-p">Real-time face detection · AR overlays · Voice coaching · Step-by-step guide · <b>Satisfaction tracking after every routine</b></div>
+      <button class="sp-btn" onclick="startCam()">▶ Start Camera</button>
+      <div class="sp-note">Open this file in Chrome or Safari on your Mac</div>
+    </div>
+
+    <video id="vid" autoplay playsinline muted></video>
+    <canvas id="cvs"></canvas>
+    <button class="vfab" id="vfab" onclick="speakStep()">🔊</button>
+    <div class="zbadge" id="zbadge"></div>
+    <div class="vbar" id="vbar" style="display:none;">
+      <div class="waves"><div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div></div>
+      <div class="vtxt" id="vtxt">Ready...</div>
+      <button class="vstop" onclick="stopSpeech()">■</button>
+    </div>
+
+    <!-- ═══════════════════════════════════
+         FINISH / SATISFACTION OVERLAY
+    ═══════════════════════════════════ -->
+    <div class="finish-overlay" id="finish-overlay">
+      <div class="confetti-wrap" id="confetti"></div>
+      <div class="finish-content">
+
+        <div class="finish-badge">✨</div>
+        <div class="finish-ev-tag" id="f-ev-tag">Daily Look</div>
+        <div class="finish-title">Routine <em>Complete!</em></div>
+
+        <!-- STATS -->
+        <div class="finish-stats">
+          <div class="fstat"><div class="fstat-n" id="f-steps">6</div><div class="fstat-l">Steps Done</div></div>
+          <div class="fstat"><div class="fstat-n" id="f-time">—</div><div class="fstat-l">Minutes</div></div>
+          <div class="fstat"><div class="fstat-n" id="f-total">—</div><div class="fstat-l">Routines</div></div>
+        </div>
+
+        <!-- STAR RATING -->
+        <div class="rating-block">
+          <div class="rating-title">How did your look turn out?</div>
+          <div class="stars" id="stars">
+            <span class="star" onclick="rate(1)">★</span>
+            <span class="star" onclick="rate(2)">★</span>
+            <span class="star" onclick="rate(3)">★</span>
+            <span class="star" onclick="rate(4)">★</span>
+            <span class="star" onclick="rate(5)">★</span>
+          </div>
+          <div class="rating-label" id="rating-label">Tap a star to rate</div>
+        </div>
+
+        <!-- FACE AREA SCORES -->
+        <div class="score-block">
+          <div class="score-title">◉ Rate each area (tap to adjust)</div>
+          <div id="area-scores"></div>
+        </div>
+
+        <!-- MOOD -->
+        <div class="mood-block">
+          <div class="mood-title">How do you feel about your look?</div>
+          <div class="mood-tags">
+            <div class="mtag" onclick="this.classList.toggle('on')">Confident ✨</div>
+            <div class="mtag" onclick="this.classList.toggle('on')">Natural 🌿</div>
+            <div class="mtag" onclick="this.classList.toggle('on')">Glam 💅</div>
+            <div class="mtag" onclick="this.classList.toggle('on')">Fresh 🌸</div>
+            <div class="mtag" onclick="this.classList.toggle('on')">Romantic 🌹</div>
+            <div class="mtag" onclick="this.classList.toggle('on')">Bold 🔥</div>
+            <div class="mtag" onclick="this.classList.toggle('on')">Professional 💼</div>
+            <div class="mtag" onclick="this.classList.toggle('on')">Needs practice 📚</div>
+          </div>
+        </div>
+
+        <!-- NOTES -->
+        <div class="notes-block">
+          <div class="notes-title">Personal notes (optional)</div>
+          <textarea class="notes-ta" id="notes-ta" placeholder="What worked well? What do you want to improve? Which products did you use?..."></textarea>
+        </div>
+
+        <!-- PERSONALIZED TIPS EARNED -->
+        <div class="tips-block">
+          <div class="tips-title">⭐ Your personalized tips for next time</div>
+          <div id="earned-tips"></div>
+        </div>
+
+        <!-- HISTORY -->
+        <div class="hist-block">
+          <div class="hist-title">Past routines</div>
+          <div class="hist-list" id="hist-list"><div style="font-size:11px;color:var(--t3)">No history yet — complete your first routine!</div></div>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="finish-actions">
+          <button class="fa-btn" onclick="closeFinish()">← Back</button>
+          <button class="fa-btn gold" onclick="saveAndShare()">💾 Save</button>
+          <button class="fa-btn pri" onclick="doAgain()">↺ Do Again</button>
+        </div>
+
+      </div>
+    </div>
+    <!-- end finish overlay -->
+
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="rpanel">
+    <div class="ss">
+      <div class="sl">Skin Tone</div>
+      <div class="trow" id="tgrid">
+        <div class="td on" style="background:#FDDBB4" onclick="setTone(this,'Fair')"></div>
+        <div class="td" style="background:#F1C27D" onclick="setTone(this,'Light')"></div>
+        <div class="td" style="background:#E0AC69" onclick="setTone(this,'Medium')"></div>
+        <div class="td" style="background:#C68642" onclick="setTone(this,'Tan')"></div>
+        <div class="td" style="background:#8D5524" onclick="setTone(this,'Deep')"></div>
+        <div class="td" style="background:#4A2912" onclick="setTone(this,'Rich')"></div>
+      </div>
+    </div>
+    <div class="ss">
+      <div class="sl">Detected Features</div>
+      <div class="flist">
+        <div class="frow"><span class="fk">Face shape</span><span class="fv2" id="d0">—</span></div>
+        <div class="frow"><span class="fk">Eye type</span><span class="fv2" id="d1">—</span></div>
+        <div class="frow"><span class="fk">Brow arch</span><span class="fv2" id="d2">—</span></div>
+        <div class="frow"><span class="fk">Lip type</span><span class="fv2" id="d3">—</span></div>
+      </div>
+    </div>
+    <div class="shdr">
+      <div class="sev" id="sev-lbl">Pick event · start camera</div>
+      <div class="sprog" id="sprog"></div>
+      <div class="sname" id="sname">Welcome</div>
+      <div class="ssub" id="ssub">Start camera then tap Next →</div>
+    </div>
+    <div class="sbody" id="sbody">
+      <div class="sc ma"><div class="sc-l">✦ How it works</div><div class="sc-t">Start the camera, select your event, then tap <b>Next →</b> to go step by step. Voice reads each step aloud. At the end, rate your look and track your progress!</div></div>
+    </div>
+    <div class="snav">
+      <button class="nb" id="bp" onclick="prevStep()" disabled>← Back</button>
+      <span class="sct" id="sct">— / —</span>
+      <button class="nb p" id="bn" onclick="nextStep()" disabled>Start →</button>
+    </div>
+  </div>
+</div>
+
+<div class="stat">
+  <div><span class="sdot" id="sdot"></span><span class="stxt" id="stxt">Camera off — open file in Chrome or Safari</span></div>
+  <div class="sbs">
+    <button class="sb" onclick="toggleCam()" id="ctog">▶ Start Camera</button>
+    <button class="sb" onclick="speakStep()">🔊 Read Aloud</button>
+    <button class="sb" onclick="resetSteps()">↺ Restart</button>
+    <button class="sb" onclick="showFinish()">✨ Finish</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script>
+/* ── STATE ── */
+let EV='Daily',TONE='Fair',running=false,stream=null;
+let modelOK=false,loopId=null,fc=0,faceSeen=false;
+let F={shape:'Oval',eyes:'Almond',brows:'Soft arch',lips:'Balanced'};
+let step=0,STEPS=[],starRating=0,startTime=null,totalRoutines=0;
+const vid=document.getElementById('vid');
+const cvs=document.getElementById('cvs');
+const Ctx=cvs.getContext('2d');
+
+/* ── HISTORY ── */
+let history=JSON.parse(localStorage.getItem('mcai_history')||'[]');
+totalRoutines=history.length;
+
+/* ── VOICE ── */
+const SY=window.speechSynthesis;
+let VV=[];
+function loadV(){VV=SY.getVoices();if(!VV.length)setTimeout(loadV,300);}
+loadV();if(SY.onvoiceschanged!==undefined)SY.onvoiceschanged=loadV;
+function bestVoice(){
+  const p=['Samantha','Karen','Moira','Tessa','Victoria','Fiona','Allison','Ava','Google US English Female','Microsoft Zira'];
+  for(const n of p){const v=VV.find(x=>x.name.includes(n));if(v)return v;}
+  return VV.find(v=>v.lang&&v.lang.startsWith('en'))||VV[0]||null;
+}
+function speak(txt){
+  if(!SY)return;SY.cancel();
+  const u=new SpeechSynthesisUtterance(txt);
+  const v=bestVoice();if(v)u.voice=v;
+  u.rate=0.91;u.pitch=1.05;u.volume=1;
+  showVBar(txt);document.getElementById('vfab').classList.add('on');
+  u.onend=u.onerror=()=>{hideVBar();document.getElementById('vfab').classList.remove('on');};
+  SY.speak(u);
+}
+function stopSpeech(){SY.cancel();hideVBar();document.getElementById('vfab').classList.remove('on');}
+function showVBar(t){document.getElementById('vbar').style.display='flex';document.getElementById('vtxt').textContent=t;document.querySelectorAll('.wb').forEach(w=>w.classList.add('on'));}
+function hideVBar(){document.getElementById('vbar').style.display='none';document.querySelectorAll('.wb').forEach(w=>w.classList.remove('on'));}
+function speakStep(){
+  if(!STEPS.length){speak('Please start the camera and choose an event to begin.');return;}
+  const s=STEPS[step];const c=getContent(s);
+  const cl=t=>t.replace(/[✦★⚠◎◉•→←►]/g,'').replace(/\s+/g,' ').trim();
+  speak(`Step ${step+1}. ${s.name}. ${cl(c.main)} Remember: ${cl(c.warn)} Pro tip: ${cl(c.pro)}`);
+}
+
+/* ── CAMERA ── */
+async function startCam(){
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},facingMode:'user'},audio:false});
+    vid.srcObject=stream;
+    vid.onloadedmetadata=async()=>{
+      await vid.play().catch(()=>{});
+      vid.style.display='block';cvs.style.display='block';
+      document.getElementById('splash').style.display='none';
+      document.getElementById('vfab').style.display='flex';
+      running=true;startTime=Date.now();
+      document.getElementById('ctog').textContent='■ Stop';
+      document.getElementById('bn').disabled=false;
+      setS(true,'Loading face detection model...');
+      buildSteps();renderStep();initModels();
+      setTimeout(()=>speak(`Welcome to your ${EV} makeup coach. I will guide you step by step. Tap Next to begin.`),800);
+    };
+  }catch(e){setS(false,'Camera error: '+e.message);}
+}
+function stopCam(){
+  SY.cancel();if(stream)stream.getTracks().forEach(t=>t.stop());
+  cancelAnimationFrame(loopId);vid.style.display='none';cvs.style.display='none';
+  document.getElementById('splash').style.display='flex';
+  document.getElementById('vfab').style.display='none';
+  hideVBar();running=false;
+  document.getElementById('ctog').textContent='▶ Start Camera';
+  document.getElementById('bn').disabled=true;
+  clearFL();setS(false,'Camera off');
+}
+function toggleCam(){if(running)stopCam();else startCam();}
+
+/* ── MODELS ── */
+async function initModels(){
+  try{
+    const BASE='https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model';
+    setS(true,'Downloading AI model (first time ~10s)...');
+    await Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri(BASE),faceapi.nets.faceLandmark68Net.loadFromUri(BASE)]);
+    modelOK=true;setS(true,'Face detection active');detLoop();
+  }catch(e){setS(true,'Model unavailable — guide overlay mode');fallback();}
+}
+
+/* ── DETECTION ── */
+async function detLoop(){
+  if(!running)return;
+  if(vid.readyState>=2){
+    try{
+      const det=await faceapi.detectSingleFace(vid,new faceapi.TinyFaceDetectorOptions({inputSize:320,scoreThreshold:0.28})).withFaceLandmarks();
+      cvs.width=vid.videoWidth||1280;cvs.height=vid.videoHeight||720;
+      Ctx.clearRect(0,0,cvs.width,cvs.height);
+      if(det){
+        if(!faceSeen){faceSeen=true;setS(true,'Face detected — AR coaching active');}
+        drawMesh(det.landmarks);
+        if(++fc%20===0)analyzeF(det.landmarks);
+        drawFL(det.landmarks);
+      }else{faceSeen=false;drawGuide();clearFL();setS(true,'No face — center face, check lighting');}
+    }catch(e){drawGuide();}
+  }
+  loopId=requestAnimationFrame(detLoop);
+}
+
+/* ── DRAW ── */
+function avg(pts){return{x:pts.reduce((s,p)=>s+p.x,0)/pts.length,y:pts.reduce((s,p)=>s+p.y,0)/pts.length};}
+function ln(pts,col,lw,cl){if(!pts||pts.length<2)return;Ctx.save();Ctx.strokeStyle=col;Ctx.lineWidth=lw;Ctx.beginPath();Ctx.moveTo(pts[0].x,pts[0].y);pts.forEach(p=>Ctx.lineTo(p.x,p.y));if(cl)Ctx.closePath();Ctx.stroke();Ctx.restore();}
+function dots(pts,col,r){pts.forEach(p=>{Ctx.save();Ctx.fillStyle=col;Ctx.beginPath();Ctx.arc(p.x,p.y,r,0,Math.PI*2);Ctx.fill();Ctx.restore();});}
+
+function drawMesh(lm){
+  const le=lm.getLeftEye(),re=lm.getRightEye(),lb=lm.getLeftEyeBrow(),rb=lm.getRightEyeBrow();
+  const no=lm.getNose(),mo=lm.getMouth(),ja=lm.getJawOutline();
+  const z=STEPS[step]?.zone||'all';
+  const h=(zone,bright)=>z==='all'||z===zone?bright:'rgba(255,255,255,0.1)';
+  ln(ja,h('contour','rgba(212,83,126,0.55)'),1.5);
+  ln(lb,h('brows','rgba(134,239,172,0.8)'),1.5);ln(rb,h('brows','rgba(134,239,172,0.8)'),1.5);
+  ln(le,h('eyes','rgba(125,211,252,0.8)'),1.5,true);ln(re,h('eyes','rgba(125,211,252,0.8)'),1.5,true);
+  ln(no,h('nose','rgba(192,132,252,0.65)'),1.2);ln(mo,h('lips','rgba(251,191,36,0.8)'),1.5,true);
+  dots([...lb,...rb],h('brows','rgba(134,239,172,0.9)'),1.8);
+  dots([...le,...re],h('eyes','rgba(125,211,252,0.9)'),1.8);
+  dots(mo,h('lips','rgba(251,191,36,0.9)'),1.8);
+  if(z==='contour'||z==='all')drawBlush(lm);
+  if(z==='lips'||z==='all')drawLips(mo);
+  if(z!=='all')hlZone(z,lm);
+}
+function hlZone(z,lm){
+  const mp={eyes:[...lm.getLeftEye(),...lm.getRightEye()],brows:[...lm.getLeftEyeBrow(),...lm.getRightEyeBrow()],nose:lm.getNose(),lips:lm.getMouth(),contour:lm.getJawOutline()};
+  const pts=mp[z];if(!pts||!pts.length)return;
+  const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y),pad=16;
+  const x=Math.min(...xs)-pad,y=Math.min(...ys)-pad,w=Math.max(...xs)-x+pad*2,h2=Math.max(...ys)-y+pad*2;
+  Ctx.save();Ctx.strokeStyle=ZC(z);Ctx.lineWidth=2;Ctx.setLineDash([6,4]);Ctx.strokeRect(x,y,w,h2);Ctx.setLineDash([]);Ctx.restore();
+  const b=document.getElementById('zbadge');b.style.display='block';
+  b.textContent='▶ '+({eyes:'Eyes',brows:'Brows',nose:'Nose',lips:'Lips',contour:'Cheeks & Contour',base:'Full Face',all:'Full Look'}[z]||z);
+}
+function ZC(z){return{eyes:'#7dd3fc',brows:'#86efac',nose:'#c084fc',lips:'#fbbf24',contour:'#f9a8d4',base:'#D4537E'}[z]||'#fff';}
+function drawBlush(lm){
+  const ja=lm.getJawOutline(),le=lm.getLeftEye(),re=lm.getRightEye();
+  const lc={x:(ja[3].x+avg(le).x)/2,y:(ja[3].y+avg(le).y)/2+12};
+  const rc={x:(ja[13].x+avg(re).x)/2,y:(ja[13].y+avg(re).y)/2+12};
+  const bc={Fair:'rgba(249,168,212,0.32)',Light:'rgba(240,128,128,0.3)',Medium:'rgba(192,112,80,0.28)',Tan:'rgba(192,80,48,0.27)',Deep:'rgba(139,32,32,0.27)',Rich:'rgba(107,0,16,0.27)'}[TONE]||'rgba(249,168,212,0.3)';
+  [lc,rc].forEach(p=>{const g=Ctx.createRadialGradient(p.x,p.y,2,p.x,p.y,36);g.addColorStop(0,bc);g.addColorStop(1,'rgba(0,0,0,0)');Ctx.save();Ctx.fillStyle=g;Ctx.beginPath();Ctx.ellipse(p.x,p.y,40,26,0.3,0,Math.PI*2);Ctx.fill();Ctx.restore();});
+}
+function drawLips(mo){
+  if(!mo||mo.length<12)return;
+  const lc={Fair:'rgba(212,97,124,0.52)',Light:'rgba(192,57,43,0.5)',Medium:'rgba(181,69,27,0.5)',Tan:'rgba(139,32,24,0.48)',Deep:'rgba(107,0,0,0.48)',Rich:'rgba(74,0,0,0.47)'}[TONE]||'rgba(212,97,124,0.5)';
+  Ctx.save();Ctx.fillStyle=lc;Ctx.beginPath();Ctx.moveTo(mo[0].x,mo[0].y);
+  mo.slice(0,7).forEach(p=>Ctx.lineTo(p.x,p.y));mo.slice(7,12).forEach(p=>Ctx.lineTo(p.x,p.y));
+  Ctx.closePath();Ctx.fill();Ctx.restore();
+}
+function drawGuide(){
+  if(!vid.videoWidth)return;
+  cvs.width=vid.videoWidth;cvs.height=vid.videoHeight;Ctx.clearRect(0,0,cvs.width,cvs.height);
+  document.getElementById('zbadge').style.display='none';
+  const w=cvs.width,h=cvs.height;
+  Ctx.save();Ctx.strokeStyle='rgba(212,83,126,0.4)';Ctx.lineWidth=1.5;Ctx.setLineDash([5,5]);
+  Ctx.beginPath();Ctx.ellipse(w/2,h*0.46,w*0.19,h*0.28,0,0,Math.PI*2);Ctx.stroke();Ctx.setLineDash([]);
+  Ctx.fillStyle='rgba(212,83,126,0.4)';Ctx.font='13px "DM Sans",sans-serif';Ctx.textAlign='center';
+  Ctx.fillText('Center your face here',w/2,h*0.83);Ctx.restore();
+}
+
+/* ── LABELS ── */
+const FL_IDS=['fl-le','fl-re','fl-lb','fl-rb','fl-no','fl-mo','fl-lch','fl-rch'];
+function clearFL(){FL_IDS.forEach(id=>{const e=document.getElementById(id);if(e)e.style.opacity='0';});}
+function drawFL(lm){
+  const cc=document.getElementById('camcol');
+  const W=cc.offsetWidth,H=cc.offsetHeight,vW=vid.videoWidth||1280,vH=vid.videoHeight||720;
+  const sx=W/vW,sy=H/vH;
+  function sc(pt){return{x:W-pt.x*sx,y:pt.y*sy};}
+  const le=lm.getLeftEye(),re=lm.getRightEye(),lb=lm.getLeftEyeBrow(),rb=lm.getRightEyeBrow();
+  const no=lm.getNose(),mo=lm.getMouth(),ja=lm.getJawOutline();
+  const z=STEPS[step]?.zone||'all';
+  const defs=[
+    {id:'fl-le',pts:le,zone:'eyes',cls:'ey',ox:-138,oy:-46,title:'Left Eye',tip:eTip()},
+    {id:'fl-re',pts:re,zone:'eyes',cls:'ey',ox:16,oy:-46,title:'Right Eye',tip:eTip()},
+    {id:'fl-lb',pts:lb,zone:'brows',cls:'br',ox:-136,oy:-62,title:'L Brow',tip:bTip()},
+    {id:'fl-rb',pts:rb,zone:'brows',cls:'br',ox:16,oy:-62,title:'R Brow',tip:bTip()},
+    {id:'fl-no',pts:no,zone:'nose',cls:'no',ox:20,oy:0,title:'Nose',tip:nTip()},
+    {id:'fl-mo',pts:mo,zone:'lips',cls:'li',ox:-136,oy:24,title:'Lips',tip:lTip()},
+    {id:'fl-lch',pts:[ja[3],ja[4]],zone:'contour',cls:'ch',ox:-136,oy:0,title:'L Cheek',tip:cTip()},
+    {id:'fl-rch',pts:[ja[12],ja[13]],zone:'contour',cls:'ch',ox:16,oy:0,title:'R Cheek',tip:cTip()},
+  ];
+  defs.forEach(d=>{
+    const show=z==='all'||z===d.zone;
+    let el=document.getElementById(d.id);
+    if(!el){el=document.createElement('div');el.id=d.id;el.className='fl '+d.cls;el.innerHTML=`<div class="fl-box"><div class="ft">${d.title}</div><div class="fv" id="${d.id}t">${d.tip}</div></div>`;cc.appendChild(el);}
+    if(!show){el.style.opacity='0';return;}
+    const ctr=sc(avg(d.pts));
+    el.style.cssText=`position:absolute;pointer-events:none;z-index:10;opacity:1;left:${ctr.x+d.ox}px;top:${ctr.y+d.oy}px;transition:opacity .2s;`;
+    el.className='fl '+d.cls;
+    const te=document.getElementById(d.id+'t');if(te)te.textContent=d.tip;
+  });
+}
+function eTip(){return F.eyes==='Hooded'?'Shadow above crease only':F.eyes==='Round'?'Outer-V to elongate':'Wing liner flatters';}
+function bTip(){return F.brows==='Flat'?'Build arch above outer iris':F.brows==='High arch'?'Fill gaps, stay defined':'Fill sparse spots';}
+function nTip(){return F.shape==='Round'?'Slim bridge with matte contour':F.shape==='Oblong'?'Highlight tip to shorten':'Light bridge shadow';}
+function lTip(){return F.lips==='Wide & thin'?'Overline Cupid\'s bow':F.lips==='Full'?'Bold color suits you!':'Line + fill for wear';}
+function cTip(){return F.shape==='Round'?'Blush HIGH on bone':F.shape==='Square'?'Apple blend, soft':'Sweep toward temple';}
+
+/* ── FEATURE ANALYSIS ── */
+function analyzeF(lm){
+  const ja=lm.getJawOutline(),le=lm.getLeftEye(),lb=lm.getLeftEyeBrow(),mo=lm.getMouth();
+  const fW=Math.abs(ja[16].x-ja[0].x)||1,fH=Math.abs(ja[8].y-ja[0].y)||1,r=fH/fW;
+  const jW=Math.abs(ja[12].x-ja[4].x)||1;
+  let shape='Oval';
+  if(r>1.5)shape='Oblong';else if(r<0.85)shape=jW/fW>0.82?'Square':'Round';
+  else if(jW/fW<0.58)shape='Diamond';else if(r<1.1&&jW/fW<0.7)shape='Heart';
+  const eW=Math.abs(le[3].x-le[0].x)||1,eH=Math.abs(le[1].y-le[5].y)||1;
+  const eyes=eW/eH>5.5?'Almond':eW/eH>3.8?'Hooded':'Round';
+  const bH=Math.abs(lb[0].y-lb[4].y)||0;
+  const brows=bH>13?'High arch':bH>6?'Soft arch':'Flat';
+  const lW=Math.abs(mo[6].x-mo[0].x)||1,lH=Math.abs(mo[9].y-mo[3].y)||1;
+  const lips=lW/lH>5?'Wide & thin':lW/lH>3?'Balanced':'Full';
+  const changed=JSON.stringify(F)!==JSON.stringify({shape,eyes,brows,lips});
+  F={shape,eyes,brows,lips};
+  document.getElementById('d0').textContent=shape;document.getElementById('d1').textContent=eyes;
+  document.getElementById('d2').textContent=brows;document.getElementById('d3').textContent=lips;
+  if(changed)renderStep();
+}
+function fallback(){
+  setS(true,'Guide overlay mode');
+  F={shape:'Oval',eyes:'Almond',brows:'Soft arch',lips:'Balanced'};
+  ['d0','d1','d2','d3'].forEach((id,i)=>document.getElementById(id).textContent=[F.shape,F.eyes,F.brows,F.lips][i]+' *');
+  function lp(){if(!running)return;if(vid.readyState>=2)drawGuide();loopId=requestAnimationFrame(lp);}
+  lp();buildSteps();renderStep();
+}
+
+/* ══════════════════════════════════════
+   FINISH / SATISFACTION SYSTEM
+══════════════════════════════════════ */
+
+const AREA_LABELS=['Base & Skin','Brows','Eyes','Contour & Blush','Lips'];
+let areaScores=[3,3,3,3,3];
+
+function showFinish(){
+  stopSpeech();
+  starRating=0;areaScores=[3,3,3,3,3];
+  const fo=document.getElementById('finish-overlay');
+  fo.classList.add('show');
+
+  // stats
+  document.getElementById('f-ev-tag').textContent=EV+' Look';
+  document.getElementById('f-steps').textContent=STEPS.length;
+  const mins=startTime?Math.round((Date.now()-startTime)/60000):0;
+  document.getElementById('f-time').textContent=mins||'<1';
+  document.getElementById('f-total').textContent=totalRoutines+1;
+
+  // reset stars
+  document.querySelectorAll('.star').forEach(s=>s.classList.remove('lit'));
+  document.getElementById('rating-label').textContent='Tap a star to rate';
+
+  // area scores
+  buildAreaScores();
+
+  // earned tips
+  buildEarnedTips();
+
+  // history
+  buildHistoryList();
+
+  // confetti
+  launchConfetti();
+
+  // voice
+  setTimeout(()=>speak(`Congratulations! You completed your ${EV} makeup routine. How did your look turn out? Please rate it with the stars.`),600);
+}
+
+function buildAreaScores(){
+  const wrap=document.getElementById('area-scores');wrap.innerHTML='';
+  AREA_LABELS.forEach((lbl,i)=>{
+    const row=document.createElement('div');row.className='score-row';
+    row.innerHTML=`<div class="score-label">${lbl}</div>
+      <div class="score-bar-wrap"><div class="score-bar" id="sb${i}" style="width:${areaScores[i]*20}%"></div></div>
+      <div class="score-val" id="sv${i}">${areaScores[i]}/5</div>`;
+    // click to cycle score
+    row.querySelector('.score-bar-wrap').addEventListener('click',e=>{
+      const rect=e.currentTarget.getBoundingClientRect();
+      const pct=(e.clientX-rect.left)/rect.width;
+      areaScores[i]=Math.max(1,Math.min(5,Math.round(pct*5)));
+      document.getElementById('sb'+i).style.width=(areaScores[i]*20)+'%';
+      document.getElementById('sv'+i).textContent=areaScores[i]+'/5';
+    });
+    wrap.appendChild(row);
+    setTimeout(()=>{document.getElementById('sb'+i).style.width=(areaScores[i]*20)+'%';},100+i*120);
+  });
+}
+
+function buildEarnedTips(){
+  const tips=generateTips();
+  const wrap=document.getElementById('earned-tips');wrap.innerHTML='';
+  tips.forEach(t=>{
+    const d=document.createElement('div');d.className='tip-item';
+    d.innerHTML=`<div class="tip-icon">${t.icon}</div><div class="tip-text">${t.text}</div>`;
+    wrap.appendChild(d);
+  });
+}
+
+function generateTips(){
+  const tips=[];
+  const f=F,t=TONE,ev=EV;
+  // personalized based on detected features
+  if(f.eyes==='Hooded')tips.push({icon:'👁',text:'For your hooded eyes: always apply shadow above the crease fold and check placement with eyes OPEN — this one habit transforms hooded eye looks.'});
+  if(f.eyes==='Round')tips.push({icon:'✨',text:'Your round eyes shine with outer-corner V shadow — it adds length every time. Practice the C-shape blend on the outer third.'});
+  if(f.brows==='Flat')tips.push({icon:'🖊',text:'To build your brow arch: place the highest point directly above the outer edge of your iris using short upward strokes — never a flat line.'});
+  if(f.shape==='Round')tips.push({icon:'🌸',text:'For your round face: placing blush HIGH on the cheekbone (not the apple) is the single most elongating technique — practice this every routine.'});
+  if(f.shape==='Square')tips.push({icon:'💫',text:'Soft circular blush on the apple of the cheeks is more flattering than angular contouring on a square face — it draws focus to the center.'});
+  if(f.lips==='Wide & thin')tips.push({icon:'💋',text:'For more lip fullness: overline the Cupid\'s bow by 0.5mm and apply gloss only to the lip center — the 3D effect creates natural-looking volume.'});
+  if(t==='Deep'||t==='Rich')tips.push({icon:'👑',text:'Always use deep-toned or chocolate setting powder — white and translucent powders leave an ashy grey cast on deeper skin tones.'});
+  if(t==='Fair'||t==='Light')tips.push({icon:'🌙',text:'Test foundations in natural daylight before events — fair foundations can photograph pink under flash, even if they look perfect indoors.'});
+  // event-specific
+  if(ev==='Wedding')tips.push({icon:'💍',text:'Waterproof everything and use the sandwich bake technique: powder → wait 10 min → dust off. Your makeup will survive every emotional moment.'});
+  if(ev==='Party')tips.push({icon:'🎉',text:'Layer cream blush under powder blush for all-night color that doesn\'t fade — and two coats of waterproof setting spray before you leave.'});
+  if(ev==='Photoshoot')tips.push({icon:'📸',text:'Always take a test photo before the shoot in similar lighting. Cameras absorb about 30% of makeup intensity — contour and highlight heavier than feels comfortable.'});
+  // general
+  tips.push({icon:'🔄',text:'Consistency builds skill — each routine teaches your hands muscle memory. The more you practice, the faster and more precise you become.'});
+  return tips.slice(0,4);
+}
+
+function buildHistoryList(){
+  const wrap=document.getElementById('hist-list');wrap.innerHTML='';
+  if(!history.length){wrap.innerHTML='<div style="font-size:11px;color:var(--t3)">Complete this routine to start your history!</div>';return;}
+  [...history].reverse().slice(0,8).forEach(h=>{
+    const d=document.createElement('div');d.className='hist-item';
+    const stars='★'.repeat(h.stars)+'☆'.repeat(5-h.stars);
+    d.innerHTML=`<div class="hist-ev">${h.ev} · ${h.tone}</div><div class="hist-stars">${stars}</div><div class="hist-date">${h.date}</div>`;
+    wrap.appendChild(d);
+  });
+}
+
+function rate(n){
+  starRating=n;
+  const labels=['','Needs more practice 📚','Getting better! 🌱','Good job! 👍','Really nice! 🌟','Absolutely stunning! 💄✨'];
+  document.querySelectorAll('.star').forEach((s,i)=>{s.classList.toggle('lit',i<n);});
+  document.getElementById('rating-label').textContent=labels[n]||'';
+  if(n===5)speak('Absolutely stunning! You nailed it!');
+  else if(n>=4)speak('Really nice work! You are getting better every time.');
+  else if(n>=3)speak('Good effort! Keep practicing and you will improve quickly.');
+  else speak('Keep practicing! Each routine builds your skills. You are doing great.');
+}
+
+function saveAndShare(){
+  const rec={ev:EV,tone:TONE,stars:starRating||3,face:F.shape,areas:areaScores,moods:[...document.querySelectorAll('.mtag.on')].map(m=>m.textContent),notes:document.getElementById('notes-ta').value,date:new Date().toLocaleDateString()};
+  history.push(rec);
+  totalRoutines=history.length;
+  localStorage.setItem('mcai_history',JSON.stringify(history.slice(-50)));
+  buildHistoryList();
+  document.getElementById('f-total').textContent=totalRoutines;
+  speak('Your routine has been saved. Keep building your makeup skills!');
+  // flash save confirmation
+  const btn=event.target;btn.textContent='✓ Saved!';btn.style.color='var(--grn)';
+  setTimeout(()=>{btn.textContent='💾 Save';btn.style.color='';},2000);
+}
+
+function closeFinish(){
+  document.getElementById('finish-overlay').classList.remove('show');
+}
+function doAgain(){
+  document.getElementById('finish-overlay').classList.remove('show');
+  step=0;startTime=Date.now();buildSteps();renderStep();
+  speak(`Let\'s do your ${EV} routine again. Practice makes perfect. Starting from step one.`);
+}
+
+/* CONFETTI */
+function launchConfetti(){
+  const wrap=document.getElementById('confetti');wrap.innerHTML='';
+  const cols=['#D4537E','#EF9F27','#f9a8d4','#86efac','#7dd3fc','#c084fc','#fbbf24','#fff'];
+  for(let i=0;i<55;i++){
+    const p=document.createElement('div');p.className='cp';
+    p.style.cssText=`left:${Math.random()*100}%;background:${cols[Math.floor(Math.random()*cols.length)]};animation-duration:${1.8+Math.random()*2}s;animation-delay:${Math.random()*1}s;width:${4+Math.random()*6}px;height:${4+Math.random()*6}px;border-radius:${Math.random()>0.5?'50%':'2px'};`;
+    wrap.appendChild(p);
+  }
+  setTimeout(()=>wrap.innerHTML='',4000);
+}
+
+/* ══ STEP DATA ══ */
+const EV_STEPS={
+  Daily:[{zone:'base',name:'Skin Prep & Base',sub:'Primer · foundation · concealer'},{zone:'brows',name:'Natural Brows',sub:'Fill · groom · clear gel'},{zone:'eyes',name:'Soft Eye Look',sub:'Shadow wash · mascara'},{zone:'contour',name:'Blush & Bronzer',sub:'Warmth · color · dimension'},{zone:'lips',name:'Your Lips But Better',sub:'Tint · gloss · balm'},{zone:'all',name:'Final Setting Check',sub:'Spray · touch-ups · done!'}],
+  'Date Night':[{zone:'base',name:'Glowing Satin Base',sub:'Dewy primer · luminous foundation'},{zone:'brows',name:'Defined Evening Brows',sub:'Polished arch · strong hold'},{zone:'eyes',name:'Smoky Evening Eyes',sub:'Depth · liner · two-coat mascara'},{zone:'contour',name:'Sculpt & Highlight',sub:'Cheekbones · cupid\'s bow glow'},{zone:'lips',name:'Statement Lip',sub:'Bold or glossy · precise liner'},{zone:'all',name:'Lock It In',sub:'Setting spray · all night ready'}],
+  University:[{zone:'base',name:'Light Campus Base',sub:'Tinted SPF · spot concealer'},{zone:'brows',name:'Groomed Natural Brows',sub:'Quick fill · clear gel'},{zone:'eyes',name:'2-Minute Eye Look',sub:'Brown shadow · mascara'},{zone:'contour',name:'One-Product Blush',sub:'Quick flush of color'},{zone:'lips',name:'Tinted Lip Balm',sub:'MLBB color · hydrating'},{zone:'all',name:'Lecture-Ready Check',sub:'Matte T-zone · done!'}],
+  Wedding:[{zone:'base',name:'Flawless Bridal Base',sub:'Silicone primer · full coverage · HD powder'},{zone:'brows',name:'Photo-Ready Brows',sub:'Pomade precision · gel lock'},{zone:'eyes',name:'Waterproof Bridal Eyes',sub:'Champagne · lashes · waterproof all'},{zone:'contour',name:'Sculpt & Bridal Glow',sub:'Cheekbones · blinding highlight'},{zone:'lips',name:'Long-Wear Bridal Lip',sub:'Liner all over · blot · reapply'},{zone:'all',name:'Waterproof Final Seal',sub:'2x setting spray · kit packed'}],
+  Work:[{zone:'base',name:'Matte Professional Base',sub:'No shine · all-day coverage'},{zone:'brows',name:'Authority Brows',sub:'Strong · defined · wax sealed'},{zone:'eyes',name:'Polished Work Eyes',sub:'Matte crease · clean liner'},{zone:'contour',name:'Structured Contour',sub:'Matte bronzer · subtle satin'},{zone:'lips',name:'Professional Lip',sub:'Long-wear · blotted · polished'},{zone:'all',name:'All-Day Touch-Up Plan',sub:'Midday powder · lip refresh'}],
+  Party:[{zone:'base',name:'Waterproof Party Base',sub:'Full coverage · T-zone bake'},{zone:'brows',name:'Sharp Dramatic Brows',sub:'Pomade · high arch · all-night'},{zone:'eyes',name:'Party Eyes',sub:'Glitter · smoke · false lashes'},{zone:'contour',name:'Strobe & Sculpt',sub:'Extreme highlight · razor contour'},{zone:'lips',name:'Night Lip',sub:'Electric color · liner · gloss'},{zone:'all',name:'Dancefloor Seal',sub:'2x waterproof spray · ready!'}],
+  Photoshoot:[{zone:'base',name:'Camera-Ready Base',sub:'HD matte · pore primer · no flashback'},{zone:'brows',name:'Editorial Brows',sub:'1 shade darker · extended tail'},{zone:'eyes',name:'Camera Eyes',sub:'Contrast · white waterline · lashes'},{zone:'contour',name:'Over-Contour for Lens',sub:'+30% intensity · blinding highlight'},{zone:'lips',name:'Lens-Perfect Lip',sub:'Overlined · filled · matte'},{zone:'all',name:'Camera Test Shot',sub:'Check flashback · adjust · shoot!'}],
+};
+
+/* ══ CONTENT ══ */
+function getContent(s){
+  const z=s.zone,f=F,t=TONE,ev=EV;
+  const LC={Fair:{Daily:'rosy nude gloss','Date Night':'wine or classic red',University:'tinted balm',Wedding:'soft rose',Work:'polished mauve',Party:'hot pink',Photoshoot:'warm red'},Light:{Daily:'warm nude','Date Night':'deep berry',University:'peachy balm',Wedding:'pale pink',Work:'dusty rose',Party:'fuchsia',Photoshoot:'berry red'},Medium:{Daily:'warm brown nude','Date Night':'wine red',University:'warm peach',Wedding:'warm rose',Work:'brick sienna',Party:'deep berry',Photoshoot:'coral red'},Tan:{Daily:'terracotta','Date Night':'burgundy',University:'warm tint',Wedding:'warm nude pink',Work:'rust brown',Party:'deep wine',Photoshoot:'warm red'},Deep:{Daily:'warm plum','Date Night':'deep plum',University:'brick tint',Wedding:'deep rose',Work:'warm red brown',Party:'oxblood',Photoshoot:'deep burgundy'},Rich:{Daily:'rich brown nude','Date Night':'deep wine',University:'deep tint',Wedding:'wine plum',Work:'bordeaux',Party:'metallic bronze',Photoshoot:'deep oxblood'}};
+  const lc=(LC[t]||LC.Fair)[ev]||'flattering nude';
+  const C={
+    base:{main:`Apply ${ev==='Wedding'||ev==='Photoshoot'?'full-coverage foundation over silicone primer':ev==='Work'||ev==='Party'?'medium-to-full matte foundation':'light-to-medium coverage foundation'}. Blend center outward with damp sponge. ${t==='Fair'||t==='Light'?'Cool-neutral shade — warm shades oxidize orange.':t==='Deep'||t==='Rich'?'Swatch on cheek in natural light — avoid ashy finishes.':'Match neck tone in natural daylight.'} Spot-conceal after foundation.`,warn:t==='Deep'||t==='Rich'?'Most foundations go ashy on deeper skin — always test outdoors before committing.':t==='Fair'?'Can photograph pink under flash — test in daylight first.':'Never match to wrist. Always swatch on jaw or cheek.',pro:ev==='Wedding'||ev==='Photoshoot'?'Stipple (press and bounce) with damp sponge — never drag. Creates a skin-like finish for photos.':ev==='Party'?'Bake under eyes: thick concealer + loose powder, 5 mins, then dust off.':'Two thin layers beat one thick — less creasing, more natural.',mic:t==='Deep'||t==='Rich'?'Deep-toned setting powder only — white/translucent leaves grey cast.':t==='Fair'||t==='Light'?'Peach setting powder under eyes cancels circles better than concealer.':'Set T-zone with powder, leave cheeks bare.',cols:{Fair:['#FDDBB4','#F0C896','#D4C5B0'],Light:['#F1C27D','#E8B570','#D4A060'],Medium:['#E0AC69','#D49A55','#C88A45'],Tan:['#C68642','#BA7535','#AE6528'],Deep:['#8D5524','#7A451A','#683510'],Rich:['#4A2912','#3A1C0A','#2A1205']}},
+    brows:{main:`Brows are ${f.brows}. ${f.brows==='Flat'?'Build arch above outer iris edge — short upward strokes, never a straight line.':f.brows==='High arch'?ev==='Work'?'High arch = authority. Fill gaps, define tail precisely.':'Fill gaps lightly, extend tail slightly.':'Fill sparse spots with hair-like strokes.'} ${ev==='Photoshoot'?'1 shade darker — cameras reduce brow intensity 30%.':ev==='Party'?'Sharp bold brows frame dramatic eyes.':'Match product to hair color.'}`,warn:f.brows==='Flat'?'Never draw a straight line — all strokes must angle upward.':'Never fill as one solid block. Hair-like strokes only.',pro:`${f.shape==='Round'?'Higher arch visually lengthens a round face.':f.shape==='Square'?'Softer arch balances angular jawlines.':'Brush brows UP first — reveals exactly where gaps are.'} Brow soap for fluffy texture or micro-pencil for precision.`,mic:'Always finish with spoolie to blend, then clear gel to lock shape.',cols:{Fair:['#8B6355','#7A5245','#6B4535'],Light:['#7A5230','#6B4220','#5A3215'],Medium:['#6B3A1A','#5A2A0A','#4A1A00'],Tan:['#5A2810','#4A1808','#3A0A00'],Deep:['#2A1008','#1A0800','#0A0200'],Rich:['#1A0800','#0A0200','#050100']}},
+    eyes:{main:`${f.eyes==='Hooded'?'Hooded eyes: ALL shadow above the crease — must show eyes-open. Check with eyes OPEN not looking down. Dark shadow above crease fold instead of lid liner — lifts and opens.':f.eyes==='Round'?'Round eyes: shadow on outer corner V shape adds length. Cat-eye wing elongates. No shimmer in both corners together.':f.eyes==='Almond'?`Almond eyes — ideal canvas. ${ev==='Date Night'||ev==='Party'?'Cut-crease or wing shows off your shape.':ev==='Work'?'Clean matte crease, tight-lined lash line.':'Light lid wash plus mascara — your shape does the work.'}`:'Apply shadow on lid, blend into crease.'} Curl lashes before mascara.`,warn:f.eyes==='Hooded'?'Applying shadow looking DOWN puts it where it disappears. Check eyes-open always.':f.eyes==='Round'?'Shimmer in both corners makes eyes rounder. One focal point only.':'Never pump mascara wand — dries formula. Twist instead.',pro:ev==='Wedding'?'Waterproof every product — primer, liner, mascara. Tears will happen.':ev==='Photoshoot'?'White liner on waterline doubles eye size for camera.':'Chin down, eyes up when applying mascara — coats every lash.',mic:'Wait 45 seconds between mascara coats. Clean fallout with DRY swab after shadow sets.',cols:{Fair:['#C8A882','#8B6355','#3D2314'],Light:['#B8956A','#7A5230','#2E1A0A'],Medium:['#A87848','#6B4226','#2A1008'],Tan:['#9A6030','#5A3010','#1A0800'],Deep:['#7A4020','#4A2010','#0A0200'],Rich:['#5A2810','#2A1008','#050100']}},
+    contour:{main:`${f.shape==='Round'?'Blush HIGH on cheekbones — not apple. Diagonal sweep toward temple. Bronzer in hollow below cheekbone.':f.shape==='Square'?'Circular blush on apple — softens angles. Avoid sharp jaw contouring.':f.shape==='Heart'?'Blush below cheekbone, not high. Bronzer on wide forehead. Touch of blush on chin.':f.shape==='Diamond'?'Blush on temples and chin balances wide cheekbones.':'Sweep blush from apple diagonally toward temple.'} ${t==='Fair'||t==='Light'?'Peachy-pink blush.':t==='Medium'?'Warm peach or coral.':t==='Tan'?'Deep coral or berry.':'Berry, wine, or bronze — pale pinks look chalky.'}`,warn:f.shape==='Round'?'Blush on apple ADDS width on a round face. Always go high.':f.shape==='Square'?'Angular jaw contouring emphasizes squareness.':'Always blend blush UPWARD toward ear.',pro:ev==='Wedding'||ev==='Photoshoot'?`Highlight Cupid's bow, inner corners, brow bone, nose bridge. ${t==='Deep'||t==='Rich'?'Gold highlight — far more flattering than silver.':'Champagne or rose-gold for photos.'}`:ev==='Party'?'Cream blush under powder blush = intensity + extended wear.':'Bronzer first for warmth, blush on top for dimension.',mic:'Press and dab highlight — never sweep. Keeps it precise on the peak only.',cols:{Fair:['#f9a8d4','#FDDBB4','#ECECEC'],Light:['#f08080','#F1C27D','#D4AF37'],Medium:['#c07050','#E0AC69','#D4AF37'],Tan:['#c05030','#C68642','#B8860B'],Deep:['#8b2020','#8D5524','#CD853F'],Rich:['#6b0010','#4A2912','#8B6914']}},
+    lips:{main:`${f.lips==='Wide & thin'?'Overline Cupid\'s bow and lower center by 0.5mm. Gloss to center only for volume illusion.':f.lips==='Full'?`Full lips are beautiful. ${ev==='Party'||ev==='Date Night'?'Bold colors look extraordinary.':'Sheer tint or gloss keeps them plump.'}`:f.lips==='Balanced'?'Balanced lips work with any technique.':''} Try ${lc} for ${ev}. ${ev==='Wedding'?'Fill entire lip with liner first — prevents feathering.':ev==='Work'?'Blot and reapply — survives coffee and meetings.':ev==='Party'?'Liner all over as base — color lasts through eating.':'Center to outer for natural finish.'}`,warn:f.lips==='Wide & thin'?'Dark liner with pale center emphasizes thinness. Keep same depth throughout.':'Liner at outer edge only = visible ring when lipstick fades. Fill entire lip.',pro:ev==='Wedding'?'Apply → blot → powder through tissue → reapply. Lasts 6-8 hours.':ev==='Date Night'?'Gloss only on center of bottom lip over matte — plump without sticky.':'Concealer just outside lip line = crisp clean edge.',mic:'After lipstick: finger in mouth, pull out slowly — removes lipstick that transfers to teeth.',cols:{Fair:['#D4617C','#E88080','#9B2335'],Light:['#C0392B','#D2527F','#8B0000'],Medium:['#B5451B','#A0391A','#8B1A1A'],Tan:['#8B2018','#7A1810','#5C0808'],Deep:['#6B0000','#7A1010','#3A0000'],Rich:['#4A0000','#5A0808','#200000']}},
+    all:{main:`${ev==='Wedding'?'Two coats setting spray in X and T pattern 30cm away. Eyes and mouth closed. 60 seconds between coats. Pack emergency kit.':ev==='Party'?'Two coats waterproof setting spray. Check mascara under eyes, lip color, behind ears.':ev==='Photoshoot'?'Test photo in same lighting. Check flashback, flat areas, asymmetry. Adjust now.':'Mist setting spray, dry naturally. Check under chin and behind ears. Done!'} `,warn:'Touching your face breaks down foundation fastest. Press blotting paper gently — never rub.',pro:ev==='Wedding'||ev==='Party'?'Sandwich bake: powder → 10 min → dust off. Extreme long-wear.':'Setting spray misted on shadow brush before applying = more intense color, zero fallout.',mic:'Check in two lights: natural daylight and indoor light. Different looks. 10 seconds saves regret.',cols:null}
+  };
+  const d=C[z]||C.all;
+  const colArr=d.cols?d.cols[t]||Object.values(d.cols)[0]:null;
+  return{...d,chips:colArr?colArr.map((c,i)=>({color:c,label:['Best match','Depth shade','Accent'][i]})):[]};
+}
+
+/* ══ STEPS ══ */
+function buildSteps(){
+  STEPS=(EV_STEPS[EV]||EV_STEPS.Daily).map(s=>({...s}));
+  if(step>=STEPS.length)step=0;
+  const pg=document.getElementById('sprog');pg.innerHTML='';
+  STEPS.forEach((_,i)=>{const d=document.createElement('div');d.className='pd'+(i<step?' dn':i===step?' cu':'');pg.appendChild(d);});
+  document.getElementById('sct').textContent=`${step+1} / ${STEPS.length}`;
+  document.getElementById('bp').disabled=step===0||!running;
+  document.getElementById('bn').textContent=step>=STEPS.length-1?'Finish ✨':'Next →';
+}
+function renderStep(){
+  if(!STEPS.length)return;
+  const s=STEPS[step];
+  document.getElementById('sev-lbl').textContent=`${EV} — step ${step+1} of ${STEPS.length}`;
+  document.getElementById('sname').textContent=s.name;
+  document.getElementById('ssub').textContent=s.sub;
+  const body=document.getElementById('sbody');body.innerHTML='';
+  function card(type,icon,title,text){const d=document.createElement('div');d.className=`sc ${type}`;d.innerHTML=`<div class="sc-l">${icon} ${title}</div><div class="sc-t">${text}</div>`;return d;}
+  const c=getContent(s);
+  body.appendChild(card('ma','✦','What to do',c.main));
+  body.appendChild(card('wa','⚠','Common mistake',c.warn));
+  body.appendChild(card('pr','★','Pro tip',c.pro));
+  body.appendChild(card('mi','◎','Micro-adjustment',c.mic));
+  if(c.chips&&c.chips.length){
+    const d=document.createElement('div');d.className='sc ma';d.innerHTML=`<div class="sc-l">◉ Colors for ${TONE} skin</div>`;
+    const row=document.createElement('div');row.className='chips';
+    c.chips.forEach(ch=>{const el=document.createElement('div');el.className='chip';el.innerHTML=`<div class="cdot" style="background:${ch.color}"></div>${ch.label}`;row.appendChild(el);});
+    d.appendChild(row);body.appendChild(d);
+  }
+  body.scrollTop=0;buildSteps();
+}
+
+function nextStep(){
+  if(step>=STEPS.length-1){showFinish();return;}
+  step++;buildSteps();renderStep();setTimeout(speakStep,350);
+}
+function prevStep(){if(step<=0)return;step--;buildSteps();renderStep();setTimeout(speakStep,350);}
+function resetSteps(){step=0;buildSteps();renderStep();if(running)speak('Restarting from step one. Skin prep and base.');}
+function setEv(b,ev){document.querySelectorAll('.eb').forEach(x=>x.classList.remove('on'));b.classList.add('on');EV=ev;step=0;buildSteps();renderStep();if(running)speak(`Switching to ${ev} look. Step one.`);}
+function setTone(el,t){document.querySelectorAll('.td').forEach(d=>d.classList.remove('on'));el.classList.add('on');TONE=t;renderStep();}
+function setS(live,msg){document.getElementById('sdot').className='sdot'+(live?' on':'');document.getElementById('stxt').textContent=msg;}
+buildSteps();
+</script>
+</body>
+</html>
